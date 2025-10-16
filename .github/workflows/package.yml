@@ -2,9 +2,7 @@ name: Build MODX Package
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [ main, master ]
 
 env:
   PHP_VERSION: '8.1'
@@ -12,13 +10,10 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
           coverage: none
@@ -35,30 +30,51 @@ jobs:
           php composer-setup.php --quiet
           rm composer-setup.php
           sudo mv composer.phar /usr/local/bin/composer
-          composer --version
 
       - name: Pull MODX core via Composer
         run: |
           composer init --no-interaction --name temp/build --description "temp" || true
           composer require modx/revolution:^2.8 --no-interaction --prefer-dist
 
-      - name: Ensure core/packages exists
+      - name: Create MODX stub config
         run: |
-          mkdir -p core/packages
-          ls -la core || true
-          ls -la core/packages || true
+          mkdir -p vendor/modx/revolution/core/config
+          cat > vendor/modx/revolution/core/config/config.inc.php << 'PHP'
+          <?php
+          $database_type = 'mysql';
+          $database_server = 'localhost';
+          $database_user = 'root';
+          $database_password = '';
+          $database_connection_charset = 'utf8';
+          $dbase = 'modxdb';
+          $table_prefix = 'modx_';
+          $database_dsn = 'mysql:host=localhost;dbname=modxdb;charset=utf8';
+          $config_options = array();
+          $driver_options = array();
+          $lastInstallTime = 0;
+          $site_id = 'modxci';
+          $site_sessionname = 'MODXSESSID';
+          $https_port = 443;
+          $uuid = 'modxci-uuid';
+          if (!defined('MODX_CORE_PATH')) define('MODX_CORE_PATH', dirname(__DIR__) . '/');
+          if (!defined('MODX_CONFIG_KEY')) define('MODX_CONFIG_KEY', 'config');
+          PHP
+
+      - name: Ensure repo core/packages exists
+        run: mkdir -p core/packages
 
       - name: Build the MODX package
-        env:
-          MODX_CORE_PATH: ${{ github.workspace }}/vendor/modx/revolution/core/
-          MODX_BASE_PATH: ${{ github.workspace }}/
         working-directory: _build
-        run: |
-          php -d display_errors=1 -d error_reporting=32767 build.transport.php
+        run: php -d display_errors=1 -d error_reporting=32767 build.transport.php
 
-      - name: List package dir
+      - name: List package locations
         run: |
+          echo "Repo core/packages:"
           ls -la core/packages || true
+          echo "Vendor MODX core/packages:"
+          ls -la vendor/modx/revolution/core/packages || true
+          echo "Search for zips:"
+          find . -type f -name "*.transport.zip" -maxdepth 5 -print
 
       - name: Upload built package as artifact
         uses: actions/upload-artifact@v4

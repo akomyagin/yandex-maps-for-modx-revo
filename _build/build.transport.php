@@ -1,35 +1,36 @@
 <?php
-require_once __DIR__ . '/build.config.php';
-
 $root = dirname(__DIR__) . '/';
 
-$modxCorePath = getenv('MODX_CORE_PATH');
+$vendorCore = $root . 'vendor/modx/revolution/core/';
+$includeCore = is_dir($vendorCore . 'model/modx') ? $vendorCore : $root . 'core/';
 
-if (!$modxCorePath && is_dir($root . 'core/model/modx')) {
-    $modxCorePath = $root . 'core/';
-}
-
-if (!$modxCorePath && is_dir($root . 'vendor/modx/revolution/core/model/modx')) {
-    $modxCorePath = $root . 'vendor/modx/revolution/core/';
-}
-
-if (!$modxCorePath) {
-    fwrite(STDERR, "MODX core not found. Set MODX_CORE_PATH env or add core/ or require modx/revolution via Composer.\n");
+if (!is_dir($includeCore . 'model/modx')) {
+    fwrite(STDERR, "MODX core not found at: {$includeCore}\n");
     exit(1);
 }
 
-$packagesDir = $root . 'core/packages';
-if (!is_dir($packagesDir)) {
-    if (!mkdir($packagesDir, 0777, true) && !is_dir($packagesDir)) {
-        throw new \RuntimeException(sprintf('Directory "%s" was not created', $packagesDir));
-    }
-}
-require_once $modxCorePath . 'model/modx/modx.class.php';
+require_once $includeCore . 'model/modx/modx.class.php';
 
 $modx = new modX();
-$modx->initialize('mgr');
 $modx->setLogLevel(modX::LOG_LEVEL_INFO);
 $modx->setLogTarget('ECHO');
+
+$repoCore = $root . 'core/';
+
+$modx->setOption('core_path', $repoCore);
+$modx->setOption('assets_path', $root . 'assets/');
+$modx->setOption('base_path', $root);
+
+if (!is_dir($repoCore . 'packages')) {
+    if (!mkdir($concurrentDirectory = $repoCore . 'packages', 0777, true) && !is_dir($concurrentDirectory)) {
+        throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
+    }
+}
+
+$modx->loadClass('transport.modPackageBuilder','',false,true);
+$builder = new modPackageBuilder($modx);
+$builder->createPackage('yandexmaps', '1.0.0', 'pl');
+$builder->registerNamespace('yandexmaps', false, true, '{core_path}components/yandexmaps/');
 
 $modx->loadClass('transport.modPackageBuilder', '', false, true);
 $builder = new modPackageBuilder($modx);

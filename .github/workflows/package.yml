@@ -8,8 +8,7 @@ on:
 
 env:
   PHP_VERSION: '8.1'
-  PACKAGE_NAME: 'yandexmaps-1.0.0-pl.transport.zip'
-  PACKAGE_PATH: 'core/packages/${{ env.PACKAGE_NAME }}'
+  PACKAGE_NAME: yandexmaps-1.0.0-pl.transport.zip
 
 jobs:
   build:
@@ -32,18 +31,16 @@ jobs:
 
       - name: Build the MODX package
         working-directory: _build
-        run: |
-          php build.transport.php
+        run: php build.transport.php
 
       - name: List package dir
         run: |
-          echo "Looking for package at ${{ env.PACKAGE_PATH }}"
+          echo "Looking for package at core/packages/${{ env.PACKAGE_NAME }}"
           ls -la core/packages || true
 
       - name: Upload built package as artifact
-        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: yandexmaps-package
-          path: ${{ env.PACKAGE_PATH }}
-          retention-days: 7
+          path: core/packages/${{ env.PACKAGE_NAME }}
+          retention-days: 30

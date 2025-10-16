@@ -47,9 +47,8 @@ $builder->setPackageAttributes([
 ]);
 
 $categoryVehicle = include __DIR__ . '/data/transport.category.php';
+
 include __DIR__ . '/data/transport.settings.php';
-include __DIR__ . '/data/transport.plugins.php';
-include __DIR__ . '/data/transport.snippets.php';
 
 $categoryVehicle->resolve('php', ['source' => __DIR__ . '/resolvers/resolve.setup.php']);
 $categoryVehicle->validate('php', ['source' => __DIR__ . '/validators/validate.php']);

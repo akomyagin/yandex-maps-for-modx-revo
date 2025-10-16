@@ -3,7 +3,9 @@ $plugin = $modx->newObject('modPlugin');
 $plugin->fromArray([
     'name' => 'YandexMapTV',
     'description' => 'Регистрирует кастомный TV-тип tvYandexMap',
-    'plugincode' => file_get_contents(MODX_CORE_PATH.'components/yandexmaps/elements/plugins/yandexmapstv.plugin.php'),
+    'plugincode' => file_get_contents(
+        $modx->getOption('base_path').'core/components/yandexmaps/elements/plugins/yandexmapstv.plugin.php'
+    ),
 ], '', true, true);
 
 $events = [];

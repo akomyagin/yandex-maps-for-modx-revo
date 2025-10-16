@@ -1,6 +1,7 @@
 <?php
 /** @var modX $modx */
 /** @var modPackageBuilder $builder */
+
 $category = $modx->newObject('modCategory');
 $category->set('category','Yandex Maps');
 
@@ -31,13 +32,16 @@ $attr = [
     ],
 ];
 
-// Подтянем сниппет и плагин, чтобы уехали в одну категорию
-$snippet = include __DIR__.'/transport.snippets.php.return.php';
-$plugin  = include __DIR__.'/transport.plugins.php.return.php';
+$snippetObj = include __DIR__.'/transport.snippets.php.return.php';
+$pluginObj  = include __DIR__.'/transport.plugins.php.return.php';
 
-$category->addMany([$snippet],'Snippets');
-$category->addMany([$plugin],'Plugins');
+$snippets = [$snippetObj];
+$plugins  = [$pluginObj];
+
+$category->addMany($snippets, 'Snippets');
+$category->addMany($plugins,  'Plugins');
 
 $vehicle = $builder->createVehicle($category, $attr);
 $builder->putVehicle($vehicle);
+
 return $vehicle;

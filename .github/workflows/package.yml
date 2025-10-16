@@ -8,7 +8,6 @@ on:
 
 env:
   PHP_VERSION: '8.1'
-  PACKAGE_NAME: yandexmaps-1.0.0-pl.transport.zip
 
 jobs:
   build:
@@ -23,24 +22,47 @@ jobs:
         with:
           php-version: ${{ env.PHP_VERSION }}
           coverage: none
+          extensions: mbstring, xml, zip, curl, dom
 
-      - name: Install system deps
+      - name: Install Composer
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y php-cli unzip zip
+          EXPECTED_CHECKSUM="$(php -r 'copy("https://composer.github.io/installer.sig", "php://stdout");')"
+          php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+          ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
+          if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then
+            echo 'ERROR: Invalid composer installer checksum'; exit 1
+          fi
+          php composer-setup.php --quiet
+          rm composer-setup.php
+          sudo mv composer.phar /usr/local/bin/composer
+          composer --version
+
+      - name: Pull MODX core via Composer
+        run: |
+          composer init --no-interaction --name temp/build --description "temp" || true
+          composer require modx/revolution:^2.8 --no-interaction --prefer-dist
+
+      - name: Ensure core/packages exists
+        run: |
+          mkdir -p core/packages
+          ls -la core || true
+          ls -la core/packages || true
 
       - name: Build the MODX package
+        env:
+          MODX_CORE_PATH: ${{ github.workspace }}/vendor/modx/revolution/core/
+          MODX_BASE_PATH: ${{ github.workspace }}/
         working-directory: _build
-        run: php build.transport.php
+        run: |
+          php -d display_errors=1 -d error_reporting=32767 build.transport.php
 
       - name: List package dir
         run: |
-          echo "Looking for package at core/packages/${{ env.PACKAGE_NAME }}"
           ls -la core/packages || true
 
       - name: Upload built package as artifact
         uses: actions/upload-artifact@v4
         with:
           name: yandexmaps-package
-          path: core/packages/${{ env.PACKAGE_NAME }}
+          path: core/packages/*.transport.zip
           retention-days: 30

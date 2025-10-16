@@ -1,0 +1,35 @@
+name: Build MODX Package
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y php-cli php-zip
+
+      - name: Build the MODX package
+        run: |
+          cd _build
+          php build.transport.php
+
+      - name: Upload built package as an artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: yandexmaps-package
+          path: ../core/packages/yandexmaps-1.0.0-pl.transport.zip

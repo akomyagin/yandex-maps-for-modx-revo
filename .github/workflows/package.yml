@@ -6,18 +6,39 @@ on:
 
 env:
   PHP_VERSION: '8.1'
+  DB_NAME: modxdb
+  DB_USER: root
+  DB_PASS: root
+  DB_HOST: 127.0.0.1
+  DB_PORT: 3306
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: shivammathur/setup-php@v2
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_DATABASE: ${{ env.DB_NAME }}
+          MYSQL_ROOT_PASSWORD: ${{ env.DB_PASS }}
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
           coverage: none
-          extensions: mbstring, xml, zip, curl, dom
+          extensions: mbstring, xml, zip, curl, dom, pdo_mysql
 
       - name: Install Composer
         run: |
@@ -31,31 +52,51 @@ jobs:
           rm composer-setup.php
           sudo mv composer.phar /usr/local/bin/composer
 
-      - name: Pull MODX core via Composer
+      - name: Pull MODX core via Composer (2.8.x)
         run: |
           composer init --no-interaction --name temp/build --description "temp" || true
           composer require modx/revolution:^2.8 --no-interaction --prefer-dist
 
-      - name: Create MODX stub config
+      - name: Wait for MySQL & init minimal schema
+        env:
+          MYSQL_PWD: ${{ env.DB_PASS }}
+        run: |
+          for i in {1..60}; do
+            mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -e "SELECT 1" && break
+            echo "Waiting for MySQL..."; sleep 2
+          done
+          # создаём таблицу workspaces (минимальный набор полей)
+          mysql -h $DB_HOST -P $DB_PORT -u $DB_USER $DB_NAME <<'SQL'
+          CREATE TABLE IF NOT EXISTS modx_workspaces (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(191) DEFAULT NULL,
+            path VARCHAR(255) NOT NULL,
+            created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            active TINYINT(1) DEFAULT 1,
+            attributes TEXT NULL
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+          DELETE FROM modx_workspaces;
+          INSERT INTO modx_workspaces (name, path, active)
+            VALUES ('ci-workspace', '${{ github.workspace }}/', 1);
+          SQL
+
+      - name: Create stub MODX config (composer core)
         run: |
           mkdir -p vendor/modx/revolution/core/config
-          cat > vendor/modx/revolution/core/config/config.inc.php << 'PHP'
+          cat > vendor/modx/revolution/core/config/config.inc.php <<PHP
           <?php
-          $database_type = 'mysql';
-          $database_server = 'localhost';
-          $database_user = 'root';
-          $database_password = '';
-          $database_connection_charset = 'utf8';
-          $dbase = 'modxdb';
-          $table_prefix = 'modx_';
-          $database_dsn = 'mysql:host=localhost;dbname=modxdb;charset=utf8';
-          $config_options = array();
-          $driver_options = array();
-          $lastInstallTime = 0;
-          $site_id = 'modxci';
-          $site_sessionname = 'MODXSESSID';
-          $https_port = 443;
-          $uuid = 'modxci-uuid';
+          \$database_type = 'mysql';
+          \$database_server = '${{ env.DB_HOST }}';
+          \$database_user = '${{ env.DB_USER }}';
+          \$database_password = '${{ env.DB_PASS }}';
+          \$database_connection_charset = 'utf8mb4';
+          \$dbase = '${{ env.DB_NAME }}';
+          \$table_prefix = 'modx_';
+          \$database_dsn = 'mysql:host=${{ env.DB_HOST }};port=${{ env.DB_PORT }};dbname=${{ env.DB_NAME }};charset=utf8mb4';
+          \$config_options = array();
+          \$driver_options = array(
+            PDO::MYSQL_ATTR_INIT_COMMAND => 'SET sql_mode=\"\"'
+          );
           if (!defined('MODX_CORE_PATH')) define('MODX_CORE_PATH', dirname(__DIR__) . '/');
           if (!defined('MODX_CONFIG_KEY')) define('MODX_CONFIG_KEY', 'config');
           PHP
@@ -65,18 +106,22 @@ jobs:
 
       - name: Build the MODX package
         working-directory: _build
-        run: php -d display_errors=1 -d error_reporting=32767 build.transport.php
-
-      - name: List package locations
+        env:
+          MODX_CORE_PATH: ${{ github.workspace }}/vendor/modx/revolution/core/
+          MODX_BASE_PATH: ${{ github.workspace }}/
         run: |
-          echo "Repo core/packages:"
-          ls -la core/packages || true
-          echo "Vendor MODX core/packages:"
-          ls -la vendor/modx/revolution/core/packages || true
-          echo "Search for zips:"
-          find . -type f -name "*.transport.zip" -maxdepth 5 -print
+          php -d display_errors=1 -d error_reporting=32767 build.transport.php
 
-      - name: Upload built package as artifact
+      - name: Show package locations
+        run: |
+          echo "repo core/packages:"
+          ls -la core/packages || true
+          echo "composer core/packages:"
+          ls -la vendor/modx/revolution/core/packages || true
+          echo "find any transports:"
+          find . -type f -name "*.transport.zip" -maxdepth 6 -print
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: yandexmaps-package

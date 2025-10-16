@@ -1,14 +1,14 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+
 $root = dirname(__DIR__) . '/';
 
-$vendorCore = $root . 'vendor/modx/revolution/core/';
-$includeCore = is_dir($vendorCore . 'model/modx') ? $vendorCore : $root . 'core/';
-
+$includeCore = getenv('MODX_CORE_PATH') ?: $root . 'core/';
 if (!is_dir($includeCore . 'model/modx')) {
-    fwrite(STDERR, "MODX core not found at: {$includeCore}\n");
+    fwrite(STDERR, "MODX core not found at {$includeCore}\n");
     exit(1);
 }
-
 require_once $includeCore . 'model/modx/modx.class.php';
 
 $modx = new modX();
@@ -16,10 +16,9 @@ $modx->setLogLevel(modX::LOG_LEVEL_INFO);
 $modx->setLogTarget('ECHO');
 
 $repoCore = $root . 'core/';
-
-$modx->setOption('core_path', $repoCore);
+$modx->setOption('core_path',   $repoCore);
 $modx->setOption('assets_path', $root . 'assets/');
-$modx->setOption('base_path', $root);
+$modx->setOption('base_path',   $root);
 
 if (!is_dir($repoCore . 'packages')) {
     if (!mkdir($concurrentDirectory = $repoCore . 'packages', 0777, true) && !is_dir($concurrentDirectory)) {
@@ -27,15 +26,13 @@ if (!is_dir($repoCore . 'packages')) {
     }
 }
 
+$modx->getService('lexicon','modLexicon');
+$modx->lexicon->load('core:default');
+
 $modx->loadClass('transport.modPackageBuilder','',false,true);
 $builder = new modPackageBuilder($modx);
-$builder->createPackage('yandexmaps', '1.0.0', 'pl');
+$builder->createPackage('yandexmaps','1.0.0','pl');
 $builder->registerNamespace('yandexmaps', false, true, '{core_path}components/yandexmaps/');
-
-$modx->loadClass('transport.modPackageBuilder', '', false, true);
-$builder = new modPackageBuilder($modx);
-$builder->createPackage(PKG_NAME_LOWER, PKG_VERSION, PKG_RELEASE);
-$builder->registerNamespace(PKG_NAME_LOWER, false, true, '{core_path}components/' . PKG_NAME_LOWER . '/');
 
 $builder->setPackageAttributes(array(
     'setup-options' => array(

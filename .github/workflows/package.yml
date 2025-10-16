@@ -83,7 +83,7 @@ jobs:
       - name: Create stub MODX config (composer core)
         run: |
           mkdir -p vendor/modx/revolution/core/config
-          cat > vendor/modx/revolution/core/config/config.inc.php <<PHP
+          cat > vendor/modx/revolution/core/config/config.inc.php <<'PHP'
           <?php
           $database_type = 'mysql';
           $database_server = '${{ env.DB_HOST }}';
@@ -94,7 +94,7 @@ jobs:
           $table_prefix = 'modx_';
           $database_dsn = 'mysql:host=${{ env.DB_HOST }};port=${{ env.DB_PORT }};dbname=${{ env.DB_NAME }};charset=utf8mb4';
           $config_options = array();
-          $driver_options = array(); // никаких INIT-команд
+          $driver_options = array(); // без INIT-команд
           if (!defined('MODX_CORE_PATH')) define('MODX_CORE_PATH', dirname(__DIR__) . '/');
           if (!defined('MODX_CONFIG_KEY')) define('MODX_CONFIG_KEY', 'config');
           PHP

@@ -25,8 +25,8 @@ $modx->setOption('assets_path', $root . 'assets/');
 $modx->setOption('base_path',   $root);
 
 if (!is_dir($repoCore . 'packages')) {
-    if (!mkdir($concurrentDirectory = $repoCore . 'packages', 0777, true) && !is_dir($concurrentDirectory)) {
-        throw new RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
+    if (!mkdir($repoCore . 'packages', 0777, true) && !is_dir($repoCore . 'packages')) {
+        throw new RuntimeException('Cannot create core/packages');
     }
 }
 
@@ -38,15 +38,12 @@ $builder->registerNamespace(PKG_NAME_LOWER, false, true, '{core_path}components/
 $builder->setPackageAttributes([
     'setup-options' => [
         'source' => __DIR__ . '/setup-options.php',
-        'properties' => [
-            'yandexmaps.api_key' => '',
-        ],
+        'properties' => ['yandexmaps.api_key' => ''],
     ],
     'changelog' => file_get_contents($modx->getOption('core_path').'components/'.PKG_NAME_LOWER.'/docs/changelog.txt'),
     'readme'    => file_get_contents($modx->getOption('core_path').'components/'.PKG_NAME_LOWER.'/docs/readme.txt'),
     'license'   => 'MIT',
-    ]
-);
+]);
 
 $categoryVehicle = include __DIR__ . '/data/transport.category.php';
 include __DIR__ . '/data/transport.settings.php';

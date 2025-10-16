@@ -17,21 +17,22 @@ $modx = new modX();
 $modx->setLogLevel(modX::LOG_LEVEL_INFO);
 $modx->setLogTarget('ECHO');
 
-$modx->setOption('use_db', false);
+$modx->getService('lexicon', 'modLexicon', '', ['use_db' => false]);
 
-$repoCore = $root . 'core/';
-$modx->setOption('core_path',   $repoCore);
+$modx->setOption('core_path',   $includeCore);
 $modx->setOption('assets_path', $root . 'assets/');
 $modx->setOption('base_path',   $root);
 
-if (!is_dir($repoCore . 'packages')) {
-    if (!mkdir($repoCore . 'packages', 0777, true) && !is_dir($repoCore . 'packages')) {
-        throw new RuntimeException('Cannot create core/packages');
-    }
+$repoPackages = $root . 'core/packages/';
+if (!is_dir($repoPackages) && !mkdir($repoPackages, 0777, true) && !is_dir($repoPackages)) {
+    throw new RuntimeException('Cannot create ' . $repoPackages);
 }
 
 $modx->loadClass('transport.modPackageBuilder','',false,true);
 $builder = new modPackageBuilder($modx);
+
+$builder->directory = $repoPackages;
+
 $builder->createPackage(PKG_NAME_LOWER, PKG_VERSION, PKG_RELEASE);
 $builder->registerNamespace(PKG_NAME_LOWER, false, true, '{core_path}components/'.PKG_NAME_LOWER.'/');
 
@@ -40,8 +41,8 @@ $builder->setPackageAttributes([
         'source' => __DIR__ . '/setup-options.php',
         'properties' => ['yandexmaps.api_key' => ''],
     ],
-    'changelog' => file_get_contents($modx->getOption('core_path').'components/'.PKG_NAME_LOWER.'/docs/changelog.txt'),
-    'readme'    => file_get_contents($modx->getOption('core_path').'components/'.PKG_NAME_LOWER.'/docs/readme.txt'),
+    'changelog' => file_get_contents($root.'core/components/'.PKG_NAME_LOWER.'/docs/changelog.txt'),
+    'readme'    => file_get_contents($root.'core/components/'.PKG_NAME_LOWER.'/docs/readme.txt'),
     'license'   => 'MIT',
 ]);
 

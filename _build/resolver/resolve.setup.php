@@ -1,36 +1,30 @@
 <?php
 /** @var modX $modx */
 /** @var array $options */
-$modx->log(modX::LOG_LEVEL_INFO, 'Running resolver: setup');
+$action = $options[xPDOTransport::PACKAGE_ACTION] ?? null;
 
-$coreSrc   = realpath($modx->getOption('source_core', $options, $modx->getOption('core_path').'components/yandexmaps/'));
-$assetsSrc = realpath($modx->getOption('source_assets', $options, $modx->getOption('assets_path').'components/yandexmaps/'));
+if ($action === xPDOTransport::ACTION_INSTALL || $action === xPDOTransport::ACTION_UPGRADE) {
+    $toSet = [
+        'yandexmaps.api_key'        => trim((string)($options['api_key'] ?? '')),
+        'yandexmaps.default_center' => trim((string)($options['default_center'] ?? '')),
+        'yandexmaps.default_zoom'   => trim((string)($options['default_zoom'] ?? '')),
+    ];
 
-$coreDst   = $modx->getOption('core_path').'components/yandexmaps/';
-$assetsDst = $modx->getOption('assets_path').'components/yandexmaps/';
-
-$transport = $options[xPDOTransport::PACKAGE_ACTION] ?? null;
-
-// Копируем core/ и assets/ из дистрибутива пакета (если не скопированы)
-if ($transport == xPDOTransport::ACTION_INSTALL || $transport == xPDOTransport::ACTION_UPGRADE) {
-    $modx->log(modX::LOG_LEVEL_INFO, 'Copying component files...');
-    $modx->getService('file','modFileHandler');
-
-    $modx->file->copyTree($coreSrc, $coreDst, ['deleteTop' => false]);
-    if (is_dir($assetsSrc)) {
-        $modx->file->copyTree($assetsSrc, $assetsDst, ['deleteTop' => false]);
+    foreach ($toSet as $key => $val) {
+        if ($val === '') continue;
+        $setting = $modx->getObject('modSystemSetting', ['key' => $key]);
+        if (!$setting) {
+            $setting = $modx->newObject('modSystemSetting');
+            $setting->set('key', $key);
+            $setting->set('namespace', 'yandexmaps');
+            $xtype = ($key === 'yandexmaps.default_zoom') ? 'numberfield' : 'textfield';
+            $setting->set('xtype', $xtype);
+        }
+        $setting->set('value', $val);
+        $setting->save();
     }
 
-    // Регистрируем namespace
-    if (!$modx->getObject('modNamespace', ['name' => 'yandexmaps'])) {
-        $ns = $modx->newObject('modNamespace');
-        $ns->fromArray([
-            'name' => 'yandexmaps',
-            'path' => $coreDst,
-            'assets_path' => $assetsDst,
-        ], '', true, true);
-        $ns->save();
-    }
+    $modx->cacheManager->refresh(['system_settings' => []]);
 }
-$modx->log(modX::LOG_LEVEL_INFO, 'Resolver complete.');
+
 return true;

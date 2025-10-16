@@ -1,8 +1,10 @@
 <?php
+
 class tvYandexMapInputRender extends modTemplateVarInputRender {
     public function getTemplate() {
-        return 'core/components/yandexmaps/tv/input/tvyandexmap.tpl';
+        return $this->modx->getOption('core_path').'components/yandexmaps/tv/input/tvyandexmap.tpl';
     }
+
     public function process($value,array $params=array()) {
         $this->setPlaceholder('value', $value);
         $this->setPlaceholder('apiKey', $this->modx->getOption('yandexmaps.api_key'));

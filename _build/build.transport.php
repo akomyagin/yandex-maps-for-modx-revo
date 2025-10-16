@@ -37,10 +37,7 @@ $builder->createPackage(PKG_NAME_LOWER, PKG_VERSION, PKG_RELEASE);
 $builder->registerNamespace(PKG_NAME_LOWER, false, true, '{core_path}components/'.PKG_NAME_LOWER.'/');
 
 $builder->setPackageAttributes([
-    'setup-options' => [
-        'source' => __DIR__ . '/setup-options.php',
-        'properties' => ['yandexmaps.api_key' => ''],
-    ],
+    'setup-options' => ['source' => __DIR__ . '/setup.options.php'],
     'changelog' => file_get_contents($root.'core/components/'.PKG_NAME_LOWER.'/docs/changelog.txt'),
     'readme'    => file_get_contents($root.'core/components/'.PKG_NAME_LOWER.'/docs/readme.txt'),
     'license'   => 'MIT',

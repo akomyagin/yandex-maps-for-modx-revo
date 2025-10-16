@@ -1,35 +1,19 @@
 <?php
+// _build/setup.options.php
 /** @var modX $modx */
-/** @var array $options */
+$apiDefault = (string)$modx->getOption('yandexmaps.api_key', null, '');
+$centerDefault = (string)$modx->getOption('yandexmaps.default_center', null, '55.751244,37.618423');
+$zoomDefault = (string)$modx->getOption('yandexmaps.default_zoom', null, '12');
 
-$modx->lexicon->load('setup');
+return '
+  <div>
+    <label>Yandex Maps API Key</label><br>
+    <input type="text" name="api_key" value="'.htmlspecialchars($apiDefault, ENT_QUOTES).'" style="width:360px;"><br><br>
 
-$apiKey = isset($options['yandexmaps.api_key']) ? $options['yandexmaps.api_key'] : '';
+    <label>Default center (lat,lon)</label><br>
+    <input type="text" name="default_center" value="'.htmlspecialchars($centerDefault, ENT_QUOTES).'" style="width:360px;"><br><br>
 
-$form = '<form method="post">
-    <label for="api_key">API Key для Яндекс.Карт:</label><br>
-    <input type="text" name="api_key" value="' . $apiKey . '" style="width: 300px;"/><br>
-    <input type="submit" value="Сохранить"/>
-</form>';
-
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && !empty($_POST['api_key'])) {
-    $apiKey = trim($_POST['api_key']);
-
-    // Сохраняем API-ключ как системную настройку
-    $setting = $modx->getObject('modSystemSetting', array('key' => 'yandexmaps.api_key'));
-    if (!$setting) {
-        $setting = $modx->newObject('modSystemSetting');
-        $setting->fromArray(array(
-            'key' => 'yandexmaps.api_key',
-            'value' => $apiKey,
-            'namespace' => 'yandexmaps',
-            'xtype' => 'text-field',
-            'area' => 'API'
-        ));
-    }
-    $setting->save();
-
-    $form .= '<p>API-ключ успешно сохранен!</p>';
-}
-
-return $form;
+    <label>Default zoom</label><br>
+    <input type="number" name="default_zoom" value="'.htmlspecialchars($zoomDefault, ENT_QUOTES).'" style="width:120px;">
+  </div>
+';

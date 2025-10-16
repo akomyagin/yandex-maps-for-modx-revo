@@ -1,9 +1,16 @@
 <?php
 switch ($modx->event->name) {
     case 'OnTVInputRenderList':
-        $modx->event->output($modx->getOption('core_path').'components/yandexmaps/tv/input/');
+        $path = $modx->getOption('core_path') . 'components/yandexmaps/tv/input/';
+        if (is_dir($path)) {
+            $modx->event->output($path);
+        }
         break;
+
     case 'OnTVInputPropertiesList':
-        $modx->event->output($modx->getOption('core_path').'components/yandexmaps/tv/properties/');
+        $path = $modx->getOption('core_path') . 'components/yandexmaps/tv/properties/';
+        if (is_dir($path)) {
+            $modx->event->output($path);
+        }
         break;
 }

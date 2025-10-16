@@ -3,14 +3,14 @@ $settings = [
     [
         'key' => 'yandexmaps.api_key',
         'value' => '',
-        'xtype' => 'text-field',
+        'xtype' => 'textfield',
         'namespace' => 'yandexmaps',
         'area' => 'API',
     ],
     [
         'key' => 'yandexmaps.default_center',
         'value' => '55.751244,37.618423',
-        'xtype' => 'text-field',
+        'xtype' => 'textfield',
         'namespace' => 'yandexmaps',
         'area' => 'Map',
     ],

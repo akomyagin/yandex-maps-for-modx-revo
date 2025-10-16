@@ -3,7 +3,13 @@ name: Build MODX Package
 on:
   push:
     branches:
+      - main
       - master
+
+env:
+  PHP_VERSION: '8.1'
+  PACKAGE_NAME: 'yandexmaps-1.0.0-pl.transport.zip'
+  PACKAGE_PATH: 'core/packages/${{ env.PACKAGE_NAME }}'
 
 jobs:
   build:
@@ -11,25 +17,33 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@v3
         with:
-          php-version: '7.4'
+          php-version: ${{ env.PHP_VERSION }}
+          coverage: none
 
-      - name: Install dependencies
+      - name: Install system deps
         run: |
-          sudo apt update
-          sudo apt install -y php-cli php-zip
+          sudo apt-get update -y
+          sudo apt-get install -y php-cli unzip zip
 
       - name: Build the MODX package
+        working-directory: _build
         run: |
-          cd _build
           php build.transport.php
 
-      - name: Upload built package as an artifact
-        uses: actions/upload-artifact@v2
+      - name: List package dir
+        run: |
+          echo "Looking for package at ${{ env.PACKAGE_PATH }}"
+          ls -la core/packages || true
+
+      - name: Upload built package as artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
         with:
           name: yandexmaps-package
-          path: ../core/packages/yandexmaps-1.0.0-pl.transport.zip
+          path: ${{ env.PACKAGE_PATH }}
+          retention-days: 7

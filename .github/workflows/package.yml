@@ -85,18 +85,16 @@ jobs:
           mkdir -p vendor/modx/revolution/core/config
           cat > vendor/modx/revolution/core/config/config.inc.php <<PHP
           <?php
-          \$database_type = 'mysql';
-          \$database_server = '${{ env.DB_HOST }}';
-          \$database_user = '${{ env.DB_USER }}';
-          \$database_password = '${{ env.DB_PASS }}';
-          \$database_connection_charset = 'utf8mb4';
-          \$dbase = '${{ env.DB_NAME }}';
-          \$table_prefix = 'modx_';
-          \$database_dsn = 'mysql:host=${{ env.DB_HOST }};port=${{ env.DB_PORT }};dbname=${{ env.DB_NAME }};charset=utf8mb4';
-          \$config_options = array();
-          \$driver_options = array(
-            PDO::MYSQL_ATTR_INIT_COMMAND => 'SET sql_mode=\"\"'
-          );
+          $database_type = 'mysql';
+          $database_server = '${{ env.DB_HOST }}';
+          $database_user = '${{ env.DB_USER }}';
+          $database_password = '${{ env.DB_PASS }}';
+          $database_connection_charset = 'utf8mb4';
+          $dbase = '${{ env.DB_NAME }}';
+          $table_prefix = 'modx_';
+          $database_dsn = 'mysql:host=${{ env.DB_HOST }};port=${{ env.DB_PORT }};dbname=${{ env.DB_NAME }};charset=utf8mb4';
+          $config_options = array();
+          $driver_options = array(); // никаких INIT-команд
           if (!defined('MODX_CORE_PATH')) define('MODX_CORE_PATH', dirname(__DIR__) . '/');
           if (!defined('MODX_CONFIG_KEY')) define('MODX_CONFIG_KEY', 'config');
           PHP
@@ -127,3 +125,12 @@ jobs:
           name: yandexmaps-package
           path: core/packages/*.transport.zip
           retention-days: 30
+
+      - name: Show package locations
+        run: |
+          echo "repo core/packages:"
+          ls -la core/packages || true
+          echo "composer core/packages:"
+          ls -la vendor/modx/revolution/core/packages || true
+          echo "find any transports:"
+          find . -type f -name "*.transport.zip" -maxdepth 6 -print
